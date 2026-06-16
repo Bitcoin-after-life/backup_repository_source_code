@@ -1,0 +1,53 @@
+name: Weekly Gitea backup
+
+# Runs a full weekly backup of every public repository of the BAL Gitea
+# organisation into this GitHub repository.
+#
+# IMPORTANT: the job writes back to this repo using the automatic GITHUB_TOKEN,
+# NOT a personal access token. The Gitea source is public, so no credentials
+# are needed to read it. This means the weekly backup keeps working forever,
+# even after the personal token used for the initial setup has been revoked.
+
+on:
+  # Every Sunday at 03:17 UTC. The odd minute avoids the top-of-hour spike
+  # when GitHub queues many scheduled jobs (and may delay them).
+  schedule:
+    - cron: "17 3 * * 0"
+  # Allow running it manually from the Actions tab.
+  workflow_dispatch:
+
+# Least-privilege: the job only needs to write commits to this repository.
+permissions:
+  contents: write
+
+concurrency:
+  group: gitea-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      GITEA_BASE: https://bitcoin-after.life/gitea
+      GITEA_ORG: bitcoinafterlife
+    steps:
+      - name: Checkout backup repository
+        uses: actions/checkout@v4
+
+      - name: Run Gitea backup
+        run: |
+          chmod +x scripts/backup_from_gitea.sh
+          ./scripts/backup_from_gitea.sh
+
+      - name: Commit and push backup
+        run: |
+          git config user.name  "BAL Backup Bot"
+          git config user.email "actions@github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Weekly Gitea backup: $(date -u '+%Y-%m-%d %H:%M:%S') UTC"
+          # Push using the automatic GITHUB_TOKEN (survives PAT revocation).
+          git push origin HEAD:main

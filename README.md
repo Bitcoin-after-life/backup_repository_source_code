@@ -34,6 +34,14 @@ The backup runs automatically via GitHub Actions:
 The workflow is **idempotent**: it re-mirrors from Gitea each time, so deletions,
 force-pushes and renamed branches on the source are reflected in the backup.
 
+## Failure alerts
+
+If a scheduled (or manual) backup fails, the workflow automatically opens a
+GitHub **issue** labelled `backup-failure` with a link to the failed run, so the
+failure is never silent. If an alert is already open, a comment is added instead
+of creating a duplicate. On the next **successful** run the open alert is
+commented and **closed automatically**.
+
 ## No personal token required
 
 The workflow writes its commits using GitHub's built-in `GITHUB_TOKEN`, **not**

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bal Server List</title>
+    <link rel="icon" href="Logo_nero.ico" type="image/x-icon">
+    <link rel="stylesheet" href="w3.css">
+    <script src="qrcode.min.js"></script>
+    <script src="purify.min.js"></script>
+    <script src="bal.js"></script>
+    <style>
+    <style>
+      @font-face { font-family: 'Optima'; src: url('OPTIMA.TTF'); }
+      h1, h2, p {font-family: 'Optima', sans-serif;}
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      body>div:first-of-type{
+        text-align:center;
+      }
+    </style>  
+  </head>
+  <body>
+    <div>
+      <a href="/"><img alt="BAL LOGO" src="/Logo_nero.png"></a>
+      <h1>Bal Server List</h1>
+      <div>
+        <select id="chain" name="chain">
+          <option selected value="bitcoin">Bitcoin</option>  
+          <option value="testnet">Testnet</option>  
+          <option value="testnet4">Testnet4</option>  
+          <option>Regtest</option>  
+        </select>
+      </div>
+      <div>
+        <label for="onion">Include tor: </label><input type="checkbox" name="onion" id="onion" value="yes" checked>
+      </div>
+      <div>
+        <a href="" id="download">Download</a>
+      </div>
+      <table id="willexecutors">
+        <thead>
+          <tr>
+            <th>Url</th>
+            <th>Info</th>
+            <th>Fees</th>
+            <th>Version</th>
+            <th>Balance</th>
+            <th>Status</th>
+            <th>Height</th>
+            <th>Wins</th>
+            <th>Score</th>
+
+          </tr>
+        </thead>
+        <tbody><!-- --></tbody>
+      </table>
+    </div>
+    <hr>
+    <form id="myServer">
+      <label for="url">Add your Will-Executor url:<br><input type="text" id="url" name="url" required placeholder="https://bitcoin-after.life:9137">
+      <button type="submit">Submit</button>
+    </form>
+    <div id="result_text"></div>
+    <div>
+    <a id="aqr">
+      <div id="qrcode"></div>
+    </a>
+    </div>
+    <strong>
+      Please make sure your server is online before you attempt to add it.<br>
+      Servers that are offline will not appear in this list.<br> 
+      They will be checked regularly until they come back online.
+    </strong> 
+    <hr>
+    <div>
+      <b>Will Executor Server List</b>      
+      <div>This page displays all Will Executor servers that manage the inheritance processing for the Bitcoin After Life plugin on Electrum. Will Executors operate in a competitive environment, racing to 
+      broadcast inheritance transactions to network nodes and earn the associated transaction fees.</div> 
+
+      <b>Listing Requirements</b>
+      <div>To be included in this list, a minimum contribution of 5,000 Satoshi is required.</div>
+
+      <b>Benefits of Listing</b>
+      <div>Listed Will Executors are automatically integrated into the plugin when inheritance arrangements are made, providing direct access to potential clients.</div>
+
+      <b>Ranking System</b>
+      <div>This leaderboard operates on a bid-based ranking system where higher contributions result in better positioning.</div>
+
+      <b>Early Adopter Incentives</b>
+      <div>To support the project's initial launch phase, we plan to maintain the first Will Executor servers for a minimum of 12 months, rewarding early participants. Subsequently, premium positions will be 
+      available through an auction system based on protocol revenue generation.</div>
+
+      <b>Revenue Expectations</b>
+      <div>Operating as a Will Executor is not a get-rich-quick opportunity. This service requires patience and long-term commitment, but can provide substantial returns over time for dedicated operators.</div>
+    </div>
+    <hr>
+    <p>mail:<a href="mailto:info@bitcoin-after.life">welist@bitcoin-after.life</a></p>
+    <script>
+      class BalServerList {
+        constructor() {
+          this.chain = 'bitcoin';
+          this.page = 0;
+          this.limit = 100;
+          this.init();
+        }
+
+        init() {
+          this.parseUrlParams();
+          this.bindEvents();
+          this.fetchDataAndPopulateTable();
+        }
+
+        parseUrlParams() {
+          const urlParams = new URLSearchParams(window.location.search);
+          this.page = parseInt(urlParams.get('page')) || 0;
+          this.limit = parseInt(urlParams.get('limit')) || 100;
+          this.chain = urlParams.get('chain') || 'bitcoin';
+
+          const chainSelect = document.getElementById('chain');
+          chainSelect.value = this.chain;
+        }
+
+        bindEvents() {
+          document.getElementById('onion').addEventListener('change', () => {
+            this.fetchDataAndPopulateTable();
+          });
+
+          document.getElementById('chain').addEventListener('change', (e) => {
+            this.chain = this.getChain();
+            this.fetchDataAndPopulateTable();
+          });
+
+          document.getElementById('myServer').addEventListener('submit', (e) => {
+            this.handleServerSubmission(e);
+          });
+        }
+
+        async handleServerSubmission(e) {
+          e.preventDefault();
+
+          const urlInput = document.getElementById('url');
+          let url = urlInput.value.trim();
+
+          if (!url) return;
+
+          url = this.formatUrl(url);
+          urlInput.value = url;
+
+          try {
+            const response = await fetch('/data', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, chain: this.chain })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              this.showError(result);
+            } else {
+              this.showSuccess(result, url);
+            }
+          } catch (error) {
+            console.error('Submission error:', error);
+            this.showError('Network error. Please try again.');
+          }
+        }
+
+        formatUrl(url) {
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            return 'https://' + url;
+          }
+          return url;
+        }
+
+        showError(message) {
+          const resultDiv = document.getElementById('result_text');
+          resultDiv.innerHTML = `<p style="color:red">${DOMPurify.sanitize(message)}</p>`;
+        }
+
+        showSuccess(result, url) {
+          const invoiceuri = `bitcoin:${result.address}?label=BAL&message=Order+For+url+%26+${encodeURIComponent(result.url)}`;
+
+          const cleanHtml = DOMPurify.sanitize(`
+          <p style="color:green">${url} successfully added</p>
+          <div> 
+          Please Pay this invoice to complete the process:<br/>
+          <b><u>Less than ${result.min_amount} sats are considered donations! if you want your server to be listed you have to send at least ${result.min_amount} sats</u></b><br/>
+          <b>Chain:</b> ${result.chain}<br/>
+          <b>Address:</b> ${result.address}<br/>
+          <b>Balance:</b> ${result.balance}<br/>
+          <b>Status:</b> ${result.status}<br/>
+          </div>
+          `);
+
+          document.getElementById("result_text").innerHTML = cleanHtml;
+
+          // Generate QR code
+          const qrElement = document.getElementById("qrcode");
+          qrElement.innerHTML = "";
+          new QRCode(qrElement, invoiceuri);
+          document.getElementById("aqr").href = invoiceuri;
+        }
+
+        getChain() {
+          const select = document.getElementById('chain');
+          return select.value;
+        }
+
+        async fetchDataAndPopulateTable() {
+          try {
+            const params = new URLSearchParams({
+              page: this.page,
+              limit: this.limit
+            });
+
+            if (!document.getElementById("onion").checked) {
+              params.append("onion", "no");
+            }
+
+            const response = await fetch(`/data/${this.chain}?${params.toString()}`);
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            this.downloadLink(data);
+            this.populateTable(data);
+          } catch (error) {
+            console.error('Error fetching data:', error);
+            this.showTableError();
+          }
+        }
+
+        showTableError() {
+          const tableBody = document.querySelector('#willexecutors tbody');
+          tableBody.innerHTML = '<tr><td colspan="6">Error loading data. Please try again later.</td></tr>';
+        }
+
+        downloadLink(data) {
+          const jsonString = JSON.stringify(data);
+          const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+
+          const downloadLink = document.getElementById('download');
+          downloadLink.href = url;
+          downloadLink.setAttribute('download', 'willexecutors.json');
+        }
+        get_url(id,url){
+
+        }
+        populateTable(willexecutors) {
+          const tableBody = document.querySelector('#willexecutors tbody');
+          tableBody.innerHTML = '';
+
+          if (Object.keys(willexecutors).length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="9">No servers found</td></tr>';
+            return;
+          }
+
+          Object.entries(willexecutors).forEach(([key, we]) => {
+            const row = document.createElement('tr');
+
+            this.appendRawTd(`<a href='/weinfo/${we.chain}/${we.id}'>${we.url}</a>`, row);
+            this.appendTd(we.info || ' ', row);
+            this.appendTd(we.base_fee, row);
+            this.appendTd(we.version, row);
+            this.appendTd(we.balance, row);
+            this.appendTd(we.status, row);
+            this.appendTd(we.last_block, row);
+            this.appendTd(we.count_win, row);
+            this.appendTd(we.points, row);
+            tableBody.appendChild(row);
+          });
+        }
+
+        appendTd(content, tr) {
+          const td = document.createElement('td');
+          td.textContent = content;
+          tr.appendChild(td);
+        }
+        appendRawTd(content,tr){
+          const td = document.createElement('td');
+          td.innerHTML = DOMPurify.sanitize(content);
+          tr.appendChild(td);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        new BalServerList();
+      });
+    </script>
+  </body>
+</html>

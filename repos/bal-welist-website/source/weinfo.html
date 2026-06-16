@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-<｜begin▁of▁sentence｜>8" />
+    <meta name="viewport" content="width=device-w, initial-scale=1.0" />
+    <title>Bal Server List</title>
+    <link rel="icon" href="Logo_nero.ico" type="image/x-icon">
+    <script src="/qrcode.min.js"></script>
+    <script src="/purify.min.js"></script>
+    <script src="/bal.js"></script>
+  </head>
+  <style>
+    table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+    }
+    th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    }
+    th {
+    background-color: #f2f2f2;
+    }
+    tr:nth-child(even) {
+    background-color: #f9f9f9;
+    }
+    span{
+      margin-left:10px;
+    }
+  </style>  
+  <body>
+    <div align="center">
+      <a href="/"><img alt="BAL LOGO" src="/Logo_nero.png"></a>
+      <h2 id="wename">&nbsp;</h2>
+      <h3 id="weinfo">&nbsp;</h3>
+      <h4 id="wechain">&nbsp;</h4>
+    </div>
+    <div style="float:left;border:1;margin-right:50px;">
+      <div><span>Version:</span><span id="weversion">&nbsp;</span></div>
+      <div><span>Fees:</span><span id="wefees">&nbsp;</span></div>
+      <div><span>Tld:</span><span id="wetld">&nbsp;</span></div>
+    </div>
+    <div style="float:left;border:1;margin-right:50px;">
+      <div><span>Height:</span><span id="weheight">&nbsp;</span></div>
+      <div><span>Points:</span><span id="wepoints">&nbsp;</span></div>
+      <div><span>Win:</span><span id="wewin">&nbsp;</span></div>
+    </div>
+    <div style="border:1;margin-right:50px;">
+      <div><span>Balance:</span><span id="webalance">&nbsp;</span></div>
+      <div><span>Status:</span><span id="westatus">&nbsp;</span></div>
+      <div><span>Last Update:</span><span id="weupdate">&nbsp;</span></div>
+    </div>
+    <div>
+      <table id="wetimes">
+        <thead>
+          <tr>
+            <th colspan=5><span id="chainth"><!-- --></span>: <span id="paginator"></span></th>
+          </tr>
+          <tr>
+            <th>height</th>
+            <th>block hash</th>
+            <th>time</th>
+            <th>diff</th>
+            <th>position</th>
+            <th>participants</th>
+            <th>points</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- -->
+        </tbody>
+      </table>
+    </div>
+    <a href="" id="download">Download</a>
+    <script type="text/javascript"> 
+      function getWeInfo(){
+        const path = window.location.pathname.split('/').filter(p => p !== '');
+        const we_id = path[2];
+        const chain = path[1];
+        const cdate=new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+        fetchDataAndPopulateTable('/weinfodata/'+chain+"/"+we_id, new URLSearchParams(),(data) => {
+          document.getElementById('wename').innerHTML     = DOMPurify.sanitize(data.url);
+          document.getElementById('wechain').innerHTML    = DOMPurify.sanitize(data.chain);
+          document.getElementById('weinfo').innerHTML     = DOMPurify.sanitize(data.info);
+          document.getElementById('wefees').innerHTML     = data.base_fee;
+          document.getElementById('weheight').innerHTML   = data.last_block;
+          document.getElementById('wepoints').innerHTML   = data.points;
+          document.getElementById('wewin').innerHTML      = data.count_win;
+          document.getElementById('wetld').innerHTML      = DOMPurify.sanitize(data.tld);
+          document.getElementById('webalance').innerHTML  = data.balance;
+          document.getElementById('weversion').innerHTML  = data.version;;
+          document.getElementById('westatus').innerHTML   = DOMPurify.sanitize(data.status);
+          document.getElementById('weupdate').innerHTML   = data.last_update;
+
+          const tableBody = document.querySelector('#wetimes tbody');
+          tableBody.innerHTML ='';
+          Object.entries(data.times).forEach(([key,wetime]) => {
+            const row = document.createElement('tr');
+            const d = new Date(wetime.time/1000);
+            row.innerHTML = `
+              <td>${wetime.blockHeight}</td>
+              <td>${DOMPurify.sanitize(wetime.blockHash)}</td>
+              <td>${d}</td>
+              <td>${wetime.diff/1000000} s</td>
+              <td>${wetime.position+1}</td>
+              <td>${wetime.participants}</td>
+              <td>${wetime.points}</td>
+            `;
+            tableBody.appendChild(row);
+          })
+          var prev=0;
+          var next=0;
+          if (data.times.length > 0){
+            prev = data.times[0].blockHeight+data.times.length;
+            next = data.times[data.times.length-1].blockHeight;
+            if (prev < 0 ){
+              prev = 0;
+            }
+          }
+
+          const paginator = {prev:prev,next:next};
+          return paginator;
+        },{elementName:"download",fileName:"weinfo_"+cdate+".json",linkText:"download"})
+      } 
+
+      getWeInfo();
+
+    </script>
+  </body>
+</html>
+

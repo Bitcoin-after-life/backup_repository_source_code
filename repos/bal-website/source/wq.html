@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .report-date {
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .stat-card {
+            background-color: #f9f9f9;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .profit {
+            color: #27ae60;
+        }
+        .failed {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>Transaction Report</h1>
+    <div class="report-date">Generated on: 2026-02-04 12:44:03</div>
+    
+    <div class="stats-container">
+        <div class="stat-card">
+            <h3>Total Transactions</h3>
+            <div class="stat-value">52</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Successful Transactions</h3>
+            <div class="stat-value">10</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Profit</h3>
+            <div class="stat-value profit">157000</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Failed Transactions</h3>
+            <div class="stat-value failed">8</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Ready to Push</h3>
+            <div class="stat-value">0</div>
+            <p>Transactions with status 0 and past locktime</p>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Waiting for Locktime</h3>
+            <div class="stat-value">34</div>
+            <p>Transactions that will be ready in the future</p>
+        </div>
+        <div class="stat-card">
+            <h3>Unique Inputs</h3>
+            <div class="stat-value">21</div>
+            <p>Unique inputs from waiting transactions</p>
+        </div>
+    </div>
+</body>
+</html>

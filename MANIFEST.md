@@ -2,7 +2,7 @@
 
 Source: `https://bitcoin-after.life/gitea/bitcoinafterlife`
 
-Last run (UTC): `2026-06-16 14:35:01`
+Last run (UTC): `2026-06-21 08:08:28`
 
 | Repository | Default branch | Last commit | Date |
 |---|---|---|---|
